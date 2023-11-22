@@ -1,2 +1,6 @@
 .idea
 venv
+*.cnf
+*.png
+*.dot
+*.pdf
