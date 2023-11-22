@@ -3,7 +3,7 @@ from typing import Dict, List, Tuple
 
 import networkx as nx
 
-from boolean import Literal, NotNode, OrNode, AndNode, Node
+from boolean import Literal, NotNode, OrNode, AndNode
 from reader import Island
 
 
@@ -12,17 +12,19 @@ class Encoder:
         """
         Helper function to build an and node from a list of literals
         """
-        if len(literals) == 1:
-            return literals[0]
-        return AndNode(literals[0], self._build_and(literals[1:]))
+        result = literals[0]
+        for literal in literals[1:]:
+            result = AndNode(result, literal)
+        return result
 
     def _build_or(self, literals: List[Literal]) -> OrNode | Literal:
         """
         Helper function to build an or node from a list of literals
         """
-        if len(literals) == 1:
-            return literals[0]
-        return OrNode(literals[0], self._build_or(literals[1:]))
+        result = literals[0]
+        for literal in literals[1:]:
+            result = OrNode(result, literal)
+        return result
 
     @staticmethod
     def _node_edges_to_literals(
@@ -96,18 +98,22 @@ class Encoder:
             ands.append(self._build_and(transformed))
         return self._build_or(ands)
 
-    def encode(self, graph: nx.MultiDiGraph, bridges: List[Tuple[Island, Island]]) -> Tuple[AndNode | Literal, Dict[str, Tuple[Island, Island]]]:
+    def encode(
+        self, graph: nx.MultiDiGraph, bridges: List[Tuple[Island, Island]]
+    ) -> Tuple[AndNode | Literal, Dict[str, Tuple[Island, Island]]]:
         """
         Transform the given graph into a boolean ast
         """
         mapping = {}
         nodes = [self._build_node(graph, node, mapping) for node in graph.nodes]
-        expression =  self._build_and(nodes)
-        expression = AndNode(expression, self.encode_crossing_bridges(bridges))
+        expression = self._build_and(nodes)
+        crossing_bridges = self.encode_crossing_bridges(bridges)
+        if crossing_bridges is not None:
+            expression = AndNode(expression, crossing_bridges)
         return expression, mapping
 
     @staticmethod
-    def _do_intersect(p1: Island, q1: Island, p2: Island, q2: Island)-> bool:
+    def _do_intersect(p1: Island, q1: Island, p2: Island, q2: Island) -> bool:
         if p1.y == q1.y and p2.x == q2.x:
             if p1.x < p2.x < q1.x and p2.y < p1.y < q2.y:
                 return True
@@ -120,15 +126,21 @@ class Encoder:
         crossing_bridges = []
         for i in range(len(bridges)):
             for j in range(len(bridges)):
-                if Encoder._do_intersect(bridges[i][0], bridges[i][1], bridges[j][0], bridges[j][1]):
+                if Encoder._do_intersect(
+                    bridges[i][0], bridges[i][1], bridges[j][0], bridges[j][1]
+                ):
                     b1 = [island.name for island in bridges[i]]
                     b2 = [island.name for island in bridges[j]]
                     crossing_bridges.append("".join(b1))
                     crossing_bridges.append("".join(b2))
         return crossing_bridges
 
-    def encode_crossing_bridges(self, bridges: List[Tuple[Island, Island]]) -> AndNode:
+    def encode_crossing_bridges(
+        self, bridges: List[Tuple[Island, Island]]
+    ) -> AndNode | None:
         crossing_bridges = Encoder._find_crossing_bridges(bridges)
+        if len(crossing_bridges) == 0:
+            return None
         nodes = []
         seen = {}
         for i in range(len(crossing_bridges)):
@@ -136,8 +148,17 @@ class Encoder:
                 if len(set(crossing_bridges[i]) & set(crossing_bridges[j])) == 0:
                     pair = frozenset([crossing_bridges[i], crossing_bridges[j]])
                     if pair not in seen:
-                        nodes.append(AndNode(OrNode(Literal(crossing_bridges[i]), Literal(crossing_bridges[j])),
-                                             OrNode(NotNode(Literal(crossing_bridges[i])),
-                                                    NotNode(Literal(crossing_bridges[j])))))
+                        nodes.append(
+                            AndNode(
+                                OrNode(
+                                    Literal(crossing_bridges[i]),
+                                    Literal(crossing_bridges[j]),
+                                ),
+                                OrNode(
+                                    NotNode(Literal(crossing_bridges[i])),
+                                    NotNode(Literal(crossing_bridges[j])),
+                                ),
+                            )
+                        )
                         seen[pair] = True
         return self._build_and(nodes)
