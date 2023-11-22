@@ -29,7 +29,9 @@ def transform(node: Literal | AndNode | OrNode | NotNode) -> AndNode | None:
     """
     cnf = CNF()
 
-    def _tseytin_transform(node_: Literal | AndNode | OrNode | NotNode, cnf_: CNF) -> Literal:
+    def _tseytin_transform(
+        node_: Literal | AndNode | OrNode | NotNode, cnf_: CNF
+    ) -> Literal:
         """
         Basic Tseytin transformation, credit to https://profs.info.uaic.ro/~stefan.ciobaca/logic-2018-2019/notes7.pdf
         """
