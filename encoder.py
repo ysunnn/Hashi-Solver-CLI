@@ -6,6 +6,7 @@ import networkx as nx
 from boolean import Literal, NotNode, OrNode, AndNode, Node
 from reader import Island
 
+
 class Encoder:
     def _build_and(self, literals: List[Literal]) -> AndNode | Literal:
         """
@@ -14,7 +15,6 @@ class Encoder:
         if len(literals) == 1:
             return literals[0]
         return AndNode(literals[0], self._build_and(literals[1:]))
-
 
     def _build_or(self, literals: List[Literal]) -> OrNode | Literal:
         """
@@ -25,7 +25,9 @@ class Encoder:
         return OrNode(literals[0], self._build_or(literals[1:]))
 
     @staticmethod
-    def _node_edges_to_literals(node: Island, graph: nx.MultiDiGraph, mapping: Dict[str, Tuple[Island, Island]]) -> List[Literal]:
+    def _node_edges_to_literals(
+        node: Island, graph: nx.MultiDiGraph, mapping: Dict[str, Tuple[Island, Island]]
+    ) -> List[Literal]:
         """
         Converts in and out going edges of a node to a list of literals.
         And create a mapping, so we can translate the literals back to the edges.
@@ -38,15 +40,17 @@ class Encoder:
                 mapping[bridge] = edge
         return bridges
 
-    def _build_node(self,
-        graph: nx.MultiDiGraph, node: Island, mapping: Dict[str, Tuple[Island, Island]]
+    def _build_node(
+        self,
+        graph: nx.MultiDiGraph,
+        node: Island,
+        mapping: Dict[str, Tuple[Island, Island]],
     ) -> Literal | AndNode | OrNode | NotNode:
         """
         build ast for the bridges of the given node, with the constraint of the number of bridges
         """
         num = node.number_of_bridges
         bridges = Encoder._node_edges_to_literals(node, graph, mapping)
-
 
         # If the number of available bridges is equal to the number of bridges
         # than we add them all with and because they are all required.
@@ -91,7 +95,6 @@ class Encoder:
                 transformed[i] = NotNode(bridges[i])
             ands.append(self._build_and(transformed))
         return self._build_or(ands)
-
 
     def encode(self, graph: nx.MultiDiGraph, bridges: List[Tuple[Island, Island]]) -> Tuple[AndNode | Literal, Dict[str, Tuple[Island, Island]]]:
         """
