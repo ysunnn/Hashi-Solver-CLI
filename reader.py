@@ -30,7 +30,7 @@ def _find_islands(puzzle_lines):
             else:
                 counter += 1
                 number_of_bridges = int(ele)
-                my_col.append(Island(r, c, number_of_bridges, chr(counter + 64)))
+                my_col.append(Island(r, c, number_of_bridges, str(counter)))
         islands.append(my_col)
     return islands
 
@@ -58,7 +58,9 @@ def read_puzzle_from_string(
     puzzle_str: str,
 ) -> Tuple[List[List[Island]], List[Tuple[Island, Island]]]:
     lines = puzzle_str.splitlines()
-    puzzle_size = int(lines.pop(0))
+    puzzle_size = int(
+        lines.pop(0).split(" ")[0]
+    )  # todo currently puzzel is symetrisch but we could have asymetrische maps !!
     islands = _find_islands(lines)
     bridges = []
     for rows in islands:
