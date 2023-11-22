@@ -13,5 +13,4 @@ islands, bridges = read_puzzle_from_string(puzzle_str)
 plot_puzzle(islands, bridges)
 graph = to_graph(islands, bridges)
 
-expression, mapping = encode(graph=graph)
-print(expression)
+expression, mapping = encode(graph=graph, bridges=bridges)
