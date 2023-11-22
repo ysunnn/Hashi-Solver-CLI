@@ -43,7 +43,7 @@ def solve(
     # make a graph from the islands and bridges
     graph = to_graph(islands, bridges)
     # encode the graph to a boolean expression
-    expression, islands_mapping = Encoder().encode(graph)
+    expression, islands_mapping = Encoder().encode(graph, bridges)
     # transform the expression to cnf
     expression = tseytin.transform(expression)
     # transform the cnf to a string that can be used by a SAT solver
@@ -57,7 +57,8 @@ def solve(
     cnf = CNF(from_string=flat)
     solver.append_formula(cnf)
     if not solver.solve():
-        raise ValueError("No solution found")
+        print("No solution found")
+        return
     # map the result back to the graph
     map_back(solver.get_model(), mapping, islands_mapping, graph)
     if plot:
