@@ -107,13 +107,16 @@ class Encoder:
         mapping = {}
         nodes = [self._build_node(graph, node, mapping) for node in graph.nodes]
         expression = self._build_and(nodes)
-        crossing_bridges = self.encode_crossing_bridges(bridges)
+        crossing_bridges = self._find_crossing_bridges(bridges)
         if crossing_bridges is not None:
             expression = AndNode(expression, crossing_bridges)
         return expression, mapping
 
     @staticmethod
     def _do_intersect(p1: Island, q1: Island, p2: Island, q2: Island) -> bool:
+        """
+        find a pair of parallel islands, and find another pair of parallel islands that pass between them.
+        """
         if p1.y == q1.y and p2.x == q2.x:
             if p1.x < p2.x < q1.x and p2.y < p1.y < q2.y:
                 return True
@@ -121,9 +124,34 @@ class Encoder:
                 return True
         return False
 
-    @staticmethod
-    def _find_crossing_bridges(bridges: List[Tuple[Island, Island]]) -> List[str]:
-        crossing_bridges = []
+    def encode_crossing_bridges(self, crossing_bridges: List[str]) -> AndNode | None:
+        """
+        build ast for each crossing bridges. CNF of "A -> ~B" is "¬A ∨ ¬B"
+        """
+        if len(crossing_bridges) == 0:
+            return None
+        nodes = [
+            AndNode(
+                OrNode(
+                    NotNode(Literal(crossing_bridges[0])),
+                    NotNode(Literal(crossing_bridges[1])),
+                ),
+                OrNode(
+                    NotNode(Literal(crossing_bridges[0])),
+                    NotNode(Literal(crossing_bridges[2])),
+                ),
+            )
+        ]
+        if len(nodes) > 0:
+            return self._build_and(nodes)
+
+    def _find_crossing_bridges(
+        self, bridges: List[Tuple[Island, Island]]
+    ) -> AndNode | None:
+        """
+        find possible intersecting bridges through the intersecting islands and add ast
+        """
+        final_ast = None
         for i in range(len(bridges)):
             for j in range(len(bridges)):
                 if Encoder._do_intersect(
@@ -131,34 +159,14 @@ class Encoder:
                 ):
                     b1 = [island.name for island in bridges[i]]
                     b2 = [island.name for island in bridges[j]]
-                    crossing_bridges.append("".join(b1))
-                    crossing_bridges.append("".join(b2))
-        return crossing_bridges
-
-    def encode_crossing_bridges(
-        self, bridges: List[Tuple[Island, Island]]
-    ) -> AndNode | None:
-        crossing_bridges = Encoder._find_crossing_bridges(bridges)
-        if len(crossing_bridges) == 0:
-            return None
-        nodes = []
-        seen = {}
-        for i in range(len(crossing_bridges)):
-            for j in range(i + 1, len(crossing_bridges)):
-                if len(set(crossing_bridges[i]) & set(crossing_bridges[j])) == 0:
-                    pair = frozenset([crossing_bridges[i], crossing_bridges[j]])
-                    if pair not in seen:
-                        nodes.append(
-                            AndNode(
-                                OrNode(
-                                    Literal(crossing_bridges[i]),
-                                    Literal(crossing_bridges[j]),
-                                ),
-                                OrNode(
-                                    NotNode(Literal(crossing_bridges[i])),
-                                    NotNode(Literal(crossing_bridges[j])),
-                                ),
-                            )
-                        )
-                        seen[pair] = True
-        return self._build_and(nodes)
+                    b3 = [island.name for island in bridges[j][::-1]]
+                    ast = self.encode_crossing_bridges(
+                        ["".join(b1), "".join(b2), "".join(b3)]
+                    )
+                    if ast is None:
+                        continue
+                    if final_ast is None:
+                        final_ast = ast
+                    else:
+                        final_ast = AndNode(final_ast, ast)
+        return final_ast
