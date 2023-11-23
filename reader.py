@@ -44,7 +44,9 @@ def _find_bridge(target_island, islands, puzzle_size):
             target_island.x + direction[0],
             target_island.y + direction[1],
         )
-        while 0 <= searching_row < puzzle_size[0] and 0 <= searching_col < puzzle_size[1]:
+        while (
+            0 <= searching_row < puzzle_size[0] and 0 <= searching_col < puzzle_size[1]
+        ):
             if islands[searching_row][searching_col] is not None:
                 bridges.append((target_island, islands[searching_row][searching_col]))
                 break
