@@ -93,7 +93,7 @@ def to_solver_string_iterative(
     # One stack for the Ast and one for the results
     stack = [(root, False)]
     result = []
-
+    and_counter = 0
     while stack:
         node, visited = stack.pop()
 
@@ -107,6 +107,7 @@ def to_solver_string_iterative(
             elif isinstance(node, NotNode):
                 result.append(f"-{result.pop()}")
             elif isinstance(node, AndNode):
+                and_counter += 1
                 right = result.pop()
                 left = result.pop()
                 result.append(f"{left} 0\n{right}")
@@ -134,4 +135,6 @@ def to_solver_string_iterative(
                 # but this should never happen
                 raise ValueError(f"Unknown node type, {node}")
 
-    return result[0] + " 0", {v: k for k, v in literal_map.items()}
+    return f"p cnf {next_literal_id - 1} {and_counter}\n" + result[0] + " 0", {
+        v: k for k, v in literal_map.items()
+    }
