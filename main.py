@@ -73,6 +73,7 @@ def test():
         with open(os.path.join("data", file)) as f:
             puzzle_str = f.read()
             solve(puzzle_str, plot=True)
+        break
 
 
 if __name__ == "__main__":
