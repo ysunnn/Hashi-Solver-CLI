@@ -1,6 +1,7 @@
 import os
-from pathlib import Path
 from typing import List
+import argparse
+from pathlib import Path
 
 import networkx as nx
 from matplotlib import pyplot as plt
@@ -72,8 +73,41 @@ def test():
         print(file)
         with open(os.path.join("data", file)) as f:
             puzzle_str = f.read()
-            solve(puzzle_str, plot=True)
+            solve(
+                puzzle_str,
+                plot=True,
+                cnf_to_file=True,
+                cnf_path=Path(f"data/{file.replace('.txt', '.cnf')}"),
+            )
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Solve a puzzle.")
+    parser.add_argument(
+        "puzzle_file", type=str, nargs="?", help="Path to the puzzle file."
+    )
+    parser.add_argument("--plot", action="store_true", help="Plot the graph.")
+    parser.add_argument(
+        "--cnf_to_file", action="store_true", help="Write the CNF to a file."
+    )
+    parser.add_argument("--cnf_path", type=str, help="Path to the CNF file.")
+    args = parser.parse_args()
+
+    if args.puzzle_file is None:
+        test()
+    else:
+        puzzle_file = Path(args.puzzle_file)
+        with open(puzzle_file, "r") as f:
+            puzzle_str = f.read()
+        solve(
+            puzzle_str,
+            plot=args.plot,
+            cnf_to_file=args.cnf_to_file,
+            cnf_path=Path(args.cnf_path)
+            if args.cnf_path
+            else puzzle_file.with_suffix(".cnf"),
+        )
 
 
 if __name__ == "__main__":
-    test()
+    main()
